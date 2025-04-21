@@ -25,12 +25,18 @@ import subprocess
 import os
 from dotenv import load_dotenv
 import json
+import time
+from datetime import datetime, timedelta
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Pass the Flask app instance to FastMCP
 mcp = FastMCP("Azure")
+
+# Track token expiration
+TOKEN_EXPIRES_AT = None
+TOKEN_REFRESH_MARGIN = 300  # Refresh token 5 minutes before expiration
 
 def authenticate_with_service_principal():
     """Authenticate using a service principal and set the access token."""
@@ -51,21 +57,39 @@ def authenticate_with_service_principal():
             "--tenant", tenant_id
         ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-        # Retrieve the access token
-        command = "az account get-access-token --query accessToken -o tsv"
-        result = subprocess.run(command, shell=True, capture_output=True, text=True)
-        global ACCESS_TOKEN
-        ACCESS_TOKEN = result.stdout.strip()
+        # Get token with expiration info
+        result = subprocess.run(
+            ["az", "account", "get-access-token", "--output", "json"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        token_info = json.loads(result.stdout)
+        
+        global ACCESS_TOKEN, TOKEN_EXPIRES_AT
+        ACCESS_TOKEN = token_info['accessToken']
+        TOKEN_EXPIRES_AT = datetime.strptime(token_info['expiresOn'], "%Y-%m-%d %H:%M:%S.%f")
+        
     except subprocess.CalledProcessError as e:
         raise RuntimeError("Failed to authenticate with service principal")
+    except (json.JSONDecodeError, KeyError) as e:
+        raise RuntimeError("Failed to parse token information")
 
-# Authenticate when the server starts
-authenticate_with_service_principal()
+def ensure_valid_token():
+    """Ensure we have a valid token, refreshing if needed."""
+    global TOKEN_EXPIRES_AT
+    
+    if TOKEN_EXPIRES_AT is None or \
+       datetime.now() + timedelta(seconds=TOKEN_REFRESH_MARGIN) >= TOKEN_EXPIRES_AT:
+        authenticate_with_service_principal()
 
 @mcp.tool()
 def azure_cli(command: str) -> str:
     """Run an Azure CLI command and return the output."""
     try:
+        # Ensure we have a valid token before running any command
+        ensure_valid_token()
+        
         # Remove 'az' prefix if present
         if command.startswith('az '):
             command = command[3:]
@@ -91,7 +115,14 @@ def azure_cli(command: str) -> str:
             return json.dumps({"error": "Command output is not valid JSON", "output": result.stdout})
             
     except subprocess.CalledProcessError as e:
+        # If we get an authentication error, try to refresh the token once
+        if "authentication failed" in str(e.stderr).lower():
+            authenticate_with_service_principal()
+            return azure_cli(command)  # Retry the command once
         return json.dumps({"error": str(e.stderr)})
+
+# Initial authentication
+authenticate_with_service_principal()
 
 # Compute Operations
 @mcp.resource("azure://compute/vm/list")
