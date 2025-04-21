@@ -44,8 +44,12 @@ authenticate_with_service_principal()
 def azure_cli(command: str) -> str:
     """Run an Azure CLI command and return the output."""
     try:
-        # Ensure output is in JSON format
-        if not command.endswith(" --output json"):
+        # Remove 'az' prefix if present
+        if command.startswith('az '):
+            command = command[3:]
+            
+        # Ensure output is in JSON format if not explicitly set to table format
+        if not any(fmt in command for fmt in ['--output', '-o']):
             command += " --output json"
             
         result = subprocess.run(
@@ -57,7 +61,9 @@ def azure_cli(command: str) -> str:
         
         # Try to parse the output as JSON to validate it
         try:
-            json.loads(result.stdout)
+            # Only try to parse as JSON if we're expecting JSON output
+            if "--output table" not in command and "-o table" not in command:
+                json.loads(result.stdout)
             return result.stdout
         except json.JSONDecodeError:
             return json.dumps({"error": "Command output is not valid JSON", "output": result.stdout})
