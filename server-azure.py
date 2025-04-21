@@ -1,3 +1,25 @@
+"""
+Script Name: server-azure.py
+Description: MCP server implementation for Azure CLI integration. Provides programmatic
+            access to Azure Cloud resources through Azure CLI commands with comprehensive
+            support for compute, storage, networking, security, and resource management operations.
+Author: JCallico
+Date Created: 2025-04-21
+Version: 0.1.0
+Python Version: >= 3.13
+Dependencies: 
+    - mcp[cli]>=0.1.0
+    - python-dotenv>=1.0.0
+    - azure-cli>=2.57.0
+License: MIT
+
+Usage:
+    Start the server:
+    $ mcp run server-azure.py
+    
+    The server will be available at http://127.0.0.1:6274
+"""
+
 from mcp.server.fastmcp import FastMCP
 import subprocess
 import os

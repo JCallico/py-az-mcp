@@ -1,3 +1,25 @@
+"""
+Script Name: create_service_principal.py
+Description: Utility script for creating and configuring an Azure Service Principal
+            with necessary permissions for the Azure MCP Server. Handles interactive
+            authentication and creates the required environment configuration.
+Author: JCallico
+Date Created: 2025-04-21
+Version: 0.1.0
+Python Version: >= 3.13
+Dependencies:
+    - azure-cli>=2.57.0
+License: MIT
+
+Usage:
+    $ python create_service_principal.py
+    
+    This will:
+    1. Authenticate you with Azure interactively
+    2. Create a new Service Principal with Contributor role
+    3. Generate a .env file with required credentials
+"""
+
 import subprocess
 import json
 
