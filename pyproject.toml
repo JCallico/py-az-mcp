@@ -1,9 +1,11 @@
 [project]
 name = "py-az-mcp"
 version = "0.1.0"
-description = "Add your description here"
+description = "Azure MCP server with support for long-running operations"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "mcp[cli]>=1.6.0",
+    "python-dotenv>=1.0.0",
+    "asyncio>=3.4.3"
 ]
