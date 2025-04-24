@@ -66,7 +66,12 @@ cd py-az-mcp
 
 2. Install dependencies using `uv`:
 ```bash
-uv pip install -r requirements.txt
+uv pip sync
+```
+
+Or install directly from pyproject.toml:
+```bash
+uv pip install -e .
 ```
 
 ## Configuration
@@ -154,12 +159,22 @@ List all resource groups:
 curl -X POST http://127.0.0.1:6274/tool/azure-cli -H "Content-Type: application/json" -d '{"command": "group list --output json"}'
 ```
 
+## Dependencies
+
+- Python >= 3.13
+- mcp[cli] >= 1.6.0
+- python-dotenv >= 1.0.0
+- asyncio >= 3.4.3
+- Azure CLI >= 2.57.0 (system requirement)
+
 ## Project Structure
 
 - `server-azure.py`: Main MCP server implementation with Azure CLI integration
 - `create_service_principal.py`: Utility script for creating Azure Service Principal
+- `main.py`: Package entry point (placeholder)
 - `pyproject.toml`: Project dependencies and configuration
 - `.env`: Environment variables configuration (not tracked in git)
+- `.python-version`: Python version requirement
 
 ## Error Handling
 
