@@ -31,121 +31,6 @@ from typing import Dict, List, Any
 # Third-party imports
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
-from mcp.server.fastmcp.prompts import base
-
-# Load environment variables from .env file
-load_dotenv()
-
-# Pass the Flask app instance to FastMCP
-mcp = FastMCP("Azure")
-
-@mcp.prompt()
-def create_vm() -> List[base.Message]:
-    return [
-        base.UserMessage("Let's create a new virtual machine on Azure"),
-        base.AssistantMessage("I can help with that. I can create VMs with various configurations:"),
-        base.AssistantMessage("""
-- Create new VMs with specific sizes and OS images
-- Configure VM networking and storage
-- Set up in any Azure region
-- Handle both Windows and Linux VMs
-
-Examples:
-- Create a new Ubuntu VM in West US 2 with 2 cores and 8GB RAM
-- Create a Windows VM with 16GB RAM
-- Deploy a VM with custom networking
-- Create a VM in an existing resource group"""),
-        base.UserMessage("Create a Ubuntu VM in West US 2"),
-        base.AssistantMessage("I'll help create a Ubuntu VM in West US 2. First, let me check your subscription details.")
-    ]
-
-@mcp.prompt()
-def manage_infrastructure() -> List[base.Message]:
-    return [
-        base.UserMessage("I need to manage Azure infrastructure"),
-        base.AssistantMessage("I can help with managing Azure infrastructure. Here's what I can do:"),
-        base.AssistantMessage("""
-- Virtual Machines and VM Scale Sets
-    * Start, stop, restart, or delete VMs
-    * Scale VM resources up or down
-    * Configure VM networking and storage
-- Storage Accounts and Containers
-    * Create and manage storage accounts
-    * Set up blob containers
-    * Configure access and networking
-- Virtual Networks and NSGs
-    * Set up VNets and subnets
-    * Configure NSG rules
-    * Manage public IPs
-- App Services and Function Apps
-    * Deploy and manage web applications
-    * Configure app settings and scaling
-- Container Registries
-    * Manage container images
-    * Configure registry access
-
-Examples:
-- Start/stop a virtual machine
-- Scale out a VM scale set to 5 instances
-- Create a storage account with LRS redundancy
-- Set up a virtual network with custom address space""")
-    ]
-
-@mcp.prompt()
-def manage_security() -> List[base.Message]:
-    return [
-        base.UserMessage("I need to manage Azure security features"),
-        base.AssistantMessage("I can help with Azure security features. Here's what I can do:"),
-        base.AssistantMessage("""
-- Key Vault management
-    * Create and delete key vaults
-    * Manage secrets
-    * Configure access policies
-- Role-based access control (RBAC)
-    * List and create role assignments
-    * Manage role definitions
-    * Configure scoped permissions
-- Managed Identities
-    * List and manage identities
-    * Configure identity assignments
-- Service Principals
-    * Create and manage service principals
-    * Configure authentication
-
-Examples:
-- Create a new key vault
-- List role assignments
-- Create a role assignment for a user
-- List managed identities
-- Create a new service principal""")
-    ]
-
-@mcp.prompt()
-def manage_monitoring() -> List[base.Message]:
-    return [
-        base.UserMessage("I need to monitor Azure resources"),
-        base.AssistantMessage("I can help you monitor Azure resources. Here's what I can do:"),
-        base.AssistantMessage("""
-- Azure Monitor metrics
-    * Resource utilization
-    * Performance metrics
-    * Custom metrics
-- Log Analytics workspaces
-    * Query logs
-    * Set up workspaces
-    * Configure data collection
-- Resource health checks
-    * Service health
-    * Resource status
-    * Diagnostic settings
-
-Examples:
-- Show metrics for a resource
-- List log analytics workspaces
-- Check resource health status
-- Monitor VM performance
-- Get web app metrics""")
-    ]
 
 # Track token expiration
 TOKEN_EXPIRES_AT = None
@@ -153,6 +38,13 @@ TOKEN_REFRESH_MARGIN = 300  # Refresh token 5 minutes before expiration
 
 # Default timeout for long-running operations (in seconds)
 DEFAULT_OPERATION_TIMEOUT = 60
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Pass the Flask app instance to FastMCP
+mcp = FastMCP("Azure")
+
 
 async def run_azure_command(command_parts, timeout=None, check_status=False):
     """Run an Azure CLI command asynchronously and return the output."""
