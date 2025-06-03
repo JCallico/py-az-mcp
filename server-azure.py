@@ -49,12 +49,12 @@ mcp = FastMCP("Azure")
 async def run_azure_command(command_parts, timeout=None, check_status=False):
     """Run an Azure CLI command asynchronously and return the output."""
     try:
-        # Set a larger buffer size for handling large responses
+        # Set an even larger buffer size for handling large responses
         process = await asyncio.create_subprocess_exec(
             *command_parts,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            limit=1024 * 1024  # 1MB buffer size
+            limit=8 * 1024 * 1024  # 8MB buffer size
         )
         
         if timeout:
@@ -62,10 +62,10 @@ async def run_azure_command(command_parts, timeout=None, check_status=False):
                 stdout = bytearray()
                 stderr = bytearray()
                 
-                # Process output in chunks
+                # Process output in larger chunks
                 async def read_stream(stream, buffer):
                     while True:
-                        chunk = await stream.read(32768)  # 32KB chunks
+                        chunk = await stream.read(262144)  # 256KB chunks
                         if not chunk:
                             break
                         buffer.extend(chunk)
@@ -97,16 +97,45 @@ async def run_azure_command(command_parts, timeout=None, check_status=False):
                         "error": "Operation took longer than expected"
                     })
         else:
-            stdout, stderr = await process.communicate()
+            try:
+                # Use larger chunks for non-timeout case too
+                stdout = bytearray()
+                stderr = bytearray()
+                
+                while True:
+                    chunk = await process.stdout.read(262144)  # 256KB chunks
+                    if not chunk:
+                        break
+                    stdout.extend(chunk)
+                
+                while True:
+                    chunk = await process.stderr.read(262144)  # 256KB chunks
+                    if not chunk:
+                        break
+                    stderr.extend(chunk)
+                
+                await process.wait()
+            except Exception as e:
+                return json.dumps({
+                    "status": "error",
+                    "message": "Error reading command output",
+                    "error": str(e)
+                })
 
         if process.returncode != 0:
             raise subprocess.CalledProcessError(process.returncode, command_parts, stdout, stderr)
 
         try:
-            # Attempt to decode and parse as JSON with a higher size limit
-            return stdout.decode('utf-8')
+            # Check if the output is too large and potentially truncate if needed
+            output = stdout.decode('utf-8')
+            if len(output) > 10 * 1024 * 1024:  # If output is larger than 10MB
+                return json.dumps({
+                    "status": "truncated",
+                    "message": "Output was too large and has been truncated",
+                    "output": output[:10 * 1024 * 1024]  # Return first 10MB
+                })
+            return output
         except UnicodeDecodeError:
-            # Handle potential encoding issues
             return json.dumps({
                 "status": "error",
                 "message": "Unable to decode command output",
